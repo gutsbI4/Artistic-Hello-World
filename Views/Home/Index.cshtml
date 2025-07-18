@@ -1,0 +1,656 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="~/css/site.css" />
+    <title>Hello World</title>
+</head>
+<body>
+    <div class="container">
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            Initializing Particle System...
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="particleCanvas"></canvas>
+        </div>
+
+        <div class="text-overlay" id="textOverlay">Hello World!</div>
+
+        <img id="floatingTroll0" class="floating-image" src="~/images/graytroll.png" alt="Floating Troll 0">
+        <img id="floatingTroll1" class="floating-image" src="~/images/kingtroll.png" alt="Floating Troll 1">
+        <img id="floatingTroll2" class="floating-image" src="~/images/momtroll.png" alt="Floating Troll 2">
+        <img id="floatingTroll3" class="floating-image" src="~/images/oldtroll.png" alt="Floating Troll 3">
+        <img id="floatingTroll4" class="floating-image" src="~/images/pirpletroll.png" alt="Floating Troll 4">
+        <img id="floatingTroll5" class="floating-image" src="~/images/rainbowtroll.png" alt="Floating Troll 5">
+        <img id="floatingTroll6" class="floating-image" src="~/images/tallhairtroll.png" alt="Floating Troll 6">
+        <img id="floatingTroll7" class="floating-image" src="~/images/twintroll.png" alt="Floating Troll 7">
+        <img id="floatingTroll8" class="floating-image" src="~/images/whitetroll.png" alt="Floating Troll 8">
+
+
+        <div class="info-panel">
+            <div><strong>Artistic Hello World</strong></div>
+            <div>ASP.NET C# + Canvas Animation</div>
+            <div>Particles: <span id="particleCount">0</span></div>
+            <div>FPS: <span id="fps">0</span></div>
+            <div>Mode: <span id="currentMode">Formation</span></div>
+            <div>Trolls: <span id="trollCount">0</span></div>
+        </div>
+
+        <div class="controls">
+            <button class="control-btn active" onclick="changeMode('formation')">Formation</button>
+            <button class="control-btn" onclick="changeMode('explosion')">Explosion</button>
+            <button class="control-btn" onclick="changeMode('wave')">Wave</button>
+            <button class="control-btn" onclick="changeMode('vortex')">Vortex</button>
+        </div>
+    </div>
+
+    <script>
+        class FloatingImage {
+            // ИЗМЕНЕНИЕ: Увеличена скорость по умолчанию
+            constructor(elementId, speed = 1.5, size = 100) { // Было 0.5, стало 1.5
+                this.element = document.getElementById(elementId);
+                this.width = this.element.offsetWidth || size;
+                this.height = this.element.offsetHeight || size;
+                this.radius = Math.min(this.width, this.height) / 2;
+
+                this.x = Math.random() * (window.innerWidth - this.width);
+                this.y = Math.random() * (window.innerHeight - this.height);
+                // ИЗМЕНЕНИЕ: Увеличены начальные рандомные скорости
+                this.vx = (Math.random() - 0.5) * speed * 4; // Было * 2, стало * 4
+                this.vy = (Math.random() - 0.5) * speed * 4; // Было * 2, стало * 4
+                this.speed = speed;
+                this.amplitudeX = Math.random() * 50 + 50;
+                this.amplitudeY = Math.random() * 50 + 50;
+                this.frequencyX = Math.random() * 0.01 + 0.005;
+                this.frequencyY = Math.random() * 0.01 + 0.005;
+                this.timeOffset = Math.random() * Math.PI * 2;
+
+                this.isDragging = false;
+                this.offsetX = 0;
+                this.offsetY = 0;
+
+                this.element.style.width = `${size}px`;
+                this.element.style.height = 'auto';
+
+                this.element.onload = () => {
+                    this.width = this.element.offsetWidth;
+                    this.height = this.element.offsetHeight;
+                    this.radius = Math.min(this.width, this.height) / 2;
+                    this.x = Math.max(0, Math.min(this.x, window.innerWidth - this.width));
+                    this.y = Math.max(0, Math.min(this.y, window.innerHeight - this.height));
+                    this.draw();
+                };
+
+                this.element.addEventListener('mousedown', this.onMouseDown.bind(this));
+            }
+
+            onMouseDown(e) {
+                e.preventDefault();
+                this.isDragging = true;
+                this.element.classList.add('dragging');
+
+                this.offsetX = e.clientX - this.x;
+                this.offsetY = e.clientY - this.y;
+
+                this.vx = 0;
+                this.vy = 0;
+
+                document.addEventListener('mousemove', this.onMouseMove.bind(this));
+                document.addEventListener('mouseup', this.onMouseUp.bind(this));
+            }
+
+            onMouseMove(e) {
+                if (this.isDragging) {
+                    this.x = e.clientX - this.offsetX;
+                    this.y = e.clientY - this.offsetY;
+
+                    this.x = Math.max(0, Math.min(this.x, window.innerWidth - this.width));
+                    this.y = Math.max(0, Math.min(this.y, window.innerHeight - this.height));
+
+                    this.draw();
+                }
+            }
+
+            onMouseUp() {
+                this.isDragging = false;
+                this.element.classList.remove('dragging');
+
+                document.removeEventListener('mousemove', this.onMouseMove.bind(this));
+                document.removeEventListener('mouseup', this.onMouseUp.bind(this));
+            }
+
+
+            update() {
+                if (this.isDragging) {
+                    this.vx = 0;
+                    this.vy = 0;
+                    return;
+                }
+
+                const width = window.innerWidth;
+                const height = window.innerHeight;
+
+                // ИЗМЕНЕНИЕ: Увеличен множитель для синусоидального движения
+                this.x += this.vx + Math.sin(performance.now() * this.frequencyX + this.timeOffset) * this.amplitudeX * 0.01; // Было * 0.005, стало * 0.01
+                this.y += this.vy + Math.cos(performance.now() * this.frequencyY + this.timeOffset) * this.amplitudeY * 0.01; // Было * 0.005, стало * 0.01
+
+                // Отскок от краев
+                if (this.x + this.width > width) {
+                    this.x = width - this.width;
+                    this.vx *= -1;
+                } else if (this.x < 0) {
+                    this.x = 0;
+                    this.vx *= -1;
+                }
+
+                if (this.y + this.height > height) {
+                    this.y = height - this.height;
+                    this.vy *= -1;
+                } else if (this.y < 0) {
+                    this.y = 0;
+                    this.vy *= -1;
+                }
+
+                // ИЗМЕНЕНИЕ: Увеличено влияние случайного изменения скорости
+                this.vx += (Math.random() - 0.5) * 0.05 * this.speed; // Было * 0.01, стало * 0.05
+                this.vy += (Math.random() - 0.5) * 0.05 * this.speed; // Было * 0.01, стало * 0.05
+
+                // ИЗМЕНЕНИЕ: Увеличена максимальная скорость
+                const currentSpeed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+                const maxSpeed = 3.0 * this.speed; // Было 1.0 * this.speed, стало 3.0 * this.speed
+                if (currentSpeed > maxSpeed) {
+                    this.vx = (this.vx / currentSpeed) * maxSpeed;
+                    this.vy = (this.vy / currentSpeed) * maxSpeed;
+                }
+            }
+
+            draw() {
+                this.element.style.transform = `translate(${this.x}px, ${this.y}px)`;
+            }
+
+            resize() {
+                const width = window.innerWidth;
+                const height = window.innerHeight;
+                this.width = this.element.offsetWidth;
+                this.height = this.element.offsetHeight;
+                this.radius = Math.min(this.width, this.height) / 2;
+
+                this.x = Math.max(0, Math.min(this.x, width - this.width));
+                this.y = Math.max(0, Math.min(this.y, height - this.height));
+                this.draw();
+            }
+        }
+
+
+        class ParticleSystem {
+            constructor() {
+                this.canvas = document.getElementById('particleCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.particles = [];
+                this.mode = 'formation';
+                this.time = 0;
+                this.mouseX = 0;
+                this.mouseY = 0;
+                this.targetPoints = [];
+                this.isReady = false;
+                this.lastFrameTime = performance.now();
+                this.transitioningToFormation = true;
+                this.transitionProgress = 0;
+
+                this.slowTransitionSpeed = 0.01;
+                this.slowFormationSpeed = 0.02;
+                this.defaultCohesionForce = 0.03;
+                this.defaultMaxSpeed = 3;
+
+                this.floatingTrolls = [];
+                const numTrolls = 9;
+                const trollBaseSize = 100;
+                for (let i = 0; i < numTrolls; i++) {
+                    // ИЗМЕНЕНИЕ: Передача новой базовой скорости
+                    const speed = 1.5 + (Math.random() * 0.75 - 0.375); // Скорость от 1.125 до 1.875 (было от 0.25 до 0.75)
+                    const size = trollBaseSize + (Math.random() * 40 - 20);
+                    this.floatingTrolls.push(new FloatingImage(`floatingTroll${i}`, speed, size));
+                }
+
+                this.resize();
+                this.generateTargetPoints();
+                this.initializeParticlesRandomly();
+                this.setupEventListeners();
+                this.animate();
+
+                setTimeout(() => {
+                    document.getElementById('loading').style.display = 'none';
+                    this.isReady = true;
+                    if (this.mode === 'formation') {
+                        this.transitioningToFormation = true;
+                        this.transitionProgress = 0;
+                        this.particles.forEach(p => { p.vx = 0; p.vy = 0; });
+                    }
+                }, 2000);
+            }
+
+            resize() {
+                this.canvas.width = window.innerWidth;
+                this.canvas.height = window.innerHeight;
+                this.floatingTrolls.forEach(troll => troll.resize());
+            }
+
+            generateTargetPoints() {
+                const text = "Hello World!";
+                const fontSize = Math.min(window.innerWidth * 0.06, 80);
+
+                const tempCanvas = document.createElement('canvas');
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCanvas.width = this.canvas.width;
+                tempCanvas.height = this.canvas.height;
+
+                tempCtx.font = `bold ${fontSize}px Arial`;
+                tempCtx.textAlign = 'center';
+                tempCtx.textBaseline = 'middle';
+                tempCtx.fillStyle = '#ffffff';
+
+                const x = tempCanvas.width / 2;
+                const y = tempCanvas.height / 2;
+
+                tempCtx.fillText(text, x, y);
+
+                tempCtx.strokeStyle = '#ffffff';
+                tempCtx.lineWidth = 3;
+                tempCtx.strokeText(text, x, y);
+
+                const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+                const data = imageData.data;
+                this.targetPoints = [];
+
+                const scanResolution = 2;
+                for (let y = 0; y < tempCanvas.height; y += scanResolution) {
+                    for (let x = 0; x < tempCanvas.width; x += scanResolution) {
+                        const i = (y * tempCanvas.width + x) * 4;
+                        const alpha = data[i + 3];
+
+                        if (alpha > 100) {
+                            this.targetPoints.push({ x: x, y: y });
+                        }
+                    }
+                }
+                console.log(`Generated ${this.targetPoints.length} target points`);
+            }
+
+            initializeParticlesRandomly() {
+                this.particles = [];
+
+                const maxParticles = 1000;
+                const numParticlesToCreate = Math.min(this.targetPoints.length, maxParticles);
+
+                const shuffledTargetPoints = [...this.targetPoints].sort(() => 0.5 - Math.random());
+
+                for (let i = 0; i < numParticlesToCreate; i++) {
+                    const target = shuffledTargetPoints[i % shuffledTargetPoints.length];
+                    this.particles.push({
+                        x: Math.random() * this.canvas.width,
+                        y: Math.random() * this.canvas.height,
+                        targetX: target.x,
+                        targetY: target.y,
+                        vx: 0,
+                        vy: 0,
+                        size: Math.random() * 2 + 1.5,
+                        color: this.getRandomColor(),
+                        life: 1,
+                        angle: Math.random() * Math.PI * 2,
+                        speed: Math.random() * 0.02 + 0.015
+                    });
+                }
+                console.log(`Initialized ${this.particles.length} particles randomly.`);
+            }
+
+            getRandomColor() {
+                const colors = [
+                    '#00ffff', '#ff00ff', '#ffff00', '#00ff00',
+                    '#ff4444', '#4444ff', '#ff8800', '#8800ff'
+                ];
+                return colors[Math.floor(Math.random() * colors.length)];
+            }
+
+            updateParticles() {
+                this.time += 0.02;
+
+                this.particles.forEach((particle, index) => {
+                    let cohesionForce = this.defaultCohesionForce;
+                    let maxSpeed = this.defaultMaxSpeed;
+
+                    if (this.mode === 'formation' && this.transitioningToFormation) {
+                        this.updateTransitionToCenter(particle, this.slowTransitionSpeed, maxSpeed);
+                    } else {
+                        switch (this.mode) {
+                            case 'formation':
+                                this.updateFormation(particle, this.slowFormationSpeed, maxSpeed);
+                                break;
+                            case 'explosion':
+                                this.updateExplosion(particle);
+                                break;
+                            case 'wave':
+                                this.updateWave(particle, index);
+                                break;
+                            case 'vortex':
+                                this.updateVortex(particle);
+                                break;
+                        }
+                    }
+
+                    particle.x += particle.vx;
+                    particle.y += particle.vy;
+                    particle.angle += 0.05;
+
+                    if (particle.x < 0 || particle.x > this.canvas.width) particle.vx *= -0.8;
+                    if (particle.y < 0 || particle.y > this.canvas.height) particle.vy *= -0.8;
+                });
+            }
+
+            updateTransitionToCenter(particle, force, maxSpd) {
+                const targetX = this.canvas.width / 2;
+                const targetY = this.canvas.height / 2;
+
+                const dx = targetX - particle.x;
+                const dy = targetY - particle.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                const friction = 0.95;
+
+                if (distance > 10) {
+                    particle.vx += dx * force;
+                    particle.vy += dy * force;
+                } else {
+                    particle.vx *= 0.9;
+                    particle.vy *= 0.9;
+                    if (distance < 1) {
+                         particle.x = targetX;
+                         particle.y = targetY;
+                         particle.vx = 0;
+                         particle.vy = 0;
+                    }
+                }
+
+                particle.vx *= friction;
+                particle.vy *= friction;
+
+                const currentSpeed = Math.sqrt(particle.vx * particle.vx + particle.vy * particle.vy);
+                if (currentSpeed > maxSpd) {
+                    particle.vx = (particle.vx / currentSpeed) * maxSpd;
+                    particle.vy = (particle.vy / currentSpeed) * maxSpd;
+                }
+            }
+
+            updateFormation(particle, force, maxSpd) {
+                const dx = particle.targetX - particle.x;
+                const dy = particle.targetY - particle.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                const friction = 0.95;
+
+                if (distance > 1) {
+                    particle.vx += dx * force;
+                    particle.vy += dy * force;
+                } else {
+                    particle.vx *= 0.9;
+                    particle.vy *= 0.9;
+                    if (distance < 0.5) {
+                        particle.x = particle.targetX;
+                        particle.y = particle.targetY;
+                        particle.vx = 0;
+                        particle.vy = 0;
+                    }
+                }
+
+                particle.vx *= friction;
+                particle.vy *= friction;
+
+                const currentSpeed = Math.sqrt(particle.vx * particle.vx + particle.vy * particle.vy);
+                if (currentSpeed > maxSpd) {
+                    particle.vx = (particle.vx / currentSpeed) * maxSpd;
+                    particle.vy = (particle.vy / currentSpeed) * maxSpd;
+                }
+            }
+
+            updateExplosion(particle) {
+                const centerX = this.canvas.width / 2;
+                const centerY = this.canvas.height / 2;
+                const dx = particle.x - centerX;
+                const dy = particle.y - centerY;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance > 0) {
+                    const force = 0.5 / (distance + 1);
+                    particle.vx += (dx / distance) * force;
+                    particle.vy += (dy / distance) * force;
+                }
+
+                particle.vx *= 0.98;
+                particle.vy *= 0.98;
+            }
+
+            updateWave(particle, index) {
+                const waveX = Math.sin(this.time + index * 0.1) * 2;
+                const waveY = Math.cos(this.time + index * 0.1) * 2;
+
+                particle.vx += waveX * 0.1;
+                particle.vy += waveY * 0.1;
+
+                particle.vx *= 0.97;
+                particle.vy *= 0.97;
+            }
+
+            updateVortex(particle) {
+                const centerX = this.mouseX || this.canvas.width / 2;
+                const centerY = this.mouseY || this.canvas.height / 2;
+                const dx = particle.x - centerX;
+                const dy = particle.y - centerY;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance > 0) {
+                    const angle = Math.atan2(dy, dx) + 0.1;
+                    const force = 0.3 / (distance * 0.01 + 1);
+                    particle.vx += Math.cos(angle) * force;
+                    particle.vy += Math.sin(angle) * force;
+                }
+
+                particle.vx *= 0.99;
+                particle.vy *= 0.99;
+            }
+
+            drawParticles() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+                this.particles.forEach(particle => {
+                    this.ctx.fillStyle = particle.color;
+                    this.ctx.beginPath();
+                    this.ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+                    this.ctx.fill();
+
+                    this.ctx.save();
+                    this.ctx.globalAlpha = 0.4;
+                    this.ctx.shadowBlur = particle.size * 2;
+                    this.ctx.shadowColor = particle.color;
+                    this.ctx.fillStyle = particle.color;
+                    this.ctx.beginPath();
+                    this.ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+                    this.ctx.fill();
+                    this.ctx.restore();
+                });
+            }
+
+            setupEventListeners() {
+                window.addEventListener('resize', () => {
+                    this.resize();
+                    this.generateTargetPoints();
+                    this.initializeParticlesRandomly();
+                    if (this.mode === 'formation') {
+                         this.transitioningToFormation = true;
+                         this.transitionProgress = 0;
+                         this.particles.forEach(p => { p.vx = 0; p.vy = 0; });
+                    }
+                });
+
+                this.canvas.addEventListener('mousemove', (e) => {
+                    this.mouseX = e.clientX;
+                    this.mouseY = e.clientY;
+                });
+
+                this.canvas.addEventListener('click', () => {
+                    this.particles.forEach(particle => {
+                        particle.color = this.getRandomColor();
+                        particle.vx += (Math.random() - 0.5) * 4;
+                        particle.vy += (Math.random() - 0.5) * 4;
+                    });
+                });
+            }
+
+            handleTrollCollisions() {
+                for (let i = 0; i < this.floatingTrolls.length; i++) {
+                    for (let j = i + 1; j < this.floatingTrolls.length; j++) {
+                        const trollA = this.floatingTrolls[i];
+                        const trollB = this.floatingTrolls[j];
+
+                        if (trollA.isDragging || trollB.isDragging) {
+                            continue;
+                        }
+
+                        const centerAX = trollA.x + trollA.width / 2;
+                        const centerAY = trollA.y + trollA.height / 2;
+                        const centerBX = trollB.x + trollB.width / 2;
+                        const centerBY = trollB.y + trollB.height / 2;
+
+                        const dx = centerBX - centerAX;
+                        const dy = centerBY - centerAY;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+
+                        const minDistance = trollA.radius + trollB.radius;
+
+                        if (distance < minDistance) {
+                            const overlap = minDistance - distance;
+                            const normalX = dx / distance;
+                            const normalY = dy / distance;
+
+                            const pushForce = 0.5;
+                            trollA.x -= normalX * overlap * pushForce;
+                            trollA.y -= normalY * overlap * pushForce;
+                            trollB.x += normalX * overlap * pushForce;
+                            trollB.y += normalY * overlap * pushForce;
+
+                            const v1n = trollA.vx * normalX + trollA.vy * normalY;
+                            const v2n = trollB.vx * normalX + trollB.vy * normalY;
+
+                            const v1n_after = v2n;
+                            const v2n_after = v1n;
+
+                            trollA.vx += (v1n_after - v1n) * normalX;
+                            trollA.vy += (v1n_after - v1n) * normalY;
+                            trollB.vx += (v2n_after - v2n) * normalX;
+                            trollB.vy += (v2n_after - v2n) * normalY;
+
+                            // ИЗМЕНЕНИЕ: Увеличен фактор отскока для большей "живости"
+                            const bounceFactor = 0.9; // Было 0.8, стало 0.9
+                            trollA.vx *= bounceFactor;
+                            trollA.vy *= bounceFactor;
+                            trollB.vx *= bounceFactor;
+                            trollB.vy *= bounceFactor;
+                        }
+                    }
+                }
+            }
+
+
+            animate() {
+                const currentTime = performance.now();
+                const deltaTime = (currentTime - this.lastFrameTime) / 1000;
+                this.lastFrameTime = currentTime;
+
+                if (this.isReady) {
+                    if (this.mode === 'formation' && this.transitioningToFormation) {
+                        this.transitionProgress += deltaTime;
+                        const centerDistanceThreshold = 50;
+
+                        let particlesInCenter = 0;
+                        const centerX = this.canvas.width / 2;
+                        const centerY = this.canvas.height / 2;
+                        this.particles.forEach(p => {
+                            const dist = Math.sqrt(Math.pow(p.x - centerX, 2) + Math.pow(p.y - centerY, 2));
+                            if (dist < centerDistanceThreshold) {
+                                particlesInCenter++;
+                            }
+                        });
+
+                        if (particlesInCenter / this.particles.length > 0.95 || this.transitionProgress > 3.5) {
+                            this.transitioningToFormation = false;
+                            this.transitionProgress = 0;
+                            this.particles.forEach(p => { p.vx = 0; p.vy = 0; });
+                        }
+                    }
+
+                    this.updateParticles();
+                    this.drawParticles();
+
+                    this.floatingTrolls.forEach(troll => {
+                        troll.update();
+                    });
+                    this.handleTrollCollisions();
+                    this.floatingTrolls.forEach(troll => {
+                        troll.draw();
+                    });
+
+
+                    document.getElementById('particleCount').textContent = this.particles.length;
+                    document.getElementById('fps').textContent = Math.round(1 / deltaTime);
+                    document.getElementById('currentMode').textContent = this.mode.charAt(0).toUpperCase() + this.mode.slice(1);
+                    document.getElementById('trollCount').textContent = this.floatingTrolls.length;
+                }
+
+                requestAnimationFrame(() => this.animate());
+            }
+
+            setMode(mode) {
+                this.mode = mode;
+                if (mode === 'formation') {
+                    this.transitioningToFormation = true;
+                    this.transitionProgress = 0;
+
+                    const shuffledTargetPoints = [...this.targetPoints].sort(() => 0.5 - Math.random());
+                    this.particles.forEach((p, i) => {
+                        const target = shuffledTargetPoints[i % shuffledTargetPoints.length];
+                        p.targetX = target.x;
+                        p.targetY = target.y;
+                        p.vx = 0;
+                        p.vy = 0;
+                    });
+
+                } else {
+                    this.transitioningToFormation = false;
+                    this.transitionProgress = 0;
+                }
+            }
+        }
+
+        let particleSystem;
+
+        window.addEventListener('load', () => {
+            particleSystem = new ParticleSystem();
+        });
+
+        function changeMode(mode) {
+            if (particleSystem) {
+                particleSystem.setMode(mode);
+
+                document.querySelectorAll('.control-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                const clickedButton = event.currentTarget;
+                if (clickedButton) {
+                    clickedButton.classList.add('active');
+                }
+            }
+        }
+    </script>
+</body>
+</html>

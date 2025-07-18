@@ -1,0 +1,184 @@
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 50%, #16213e 100%);
+    min-height: 100vh;
+    overflow: hidden;
+    font-family: 'Courier New', monospace;
+}
+
+.container {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.canvas-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+#particleCanvas {
+    background: transparent;
+}
+
+.text-overlay {
+    position: absolute;
+    z-index: 2;
+    font-size: 4rem;
+    font-weight: bold;
+    color: transparent;
+    text-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+    animation: glow 3s ease-in-out infinite alternate;
+    user-select: none;
+    pointer-events: none;
+}
+
+@keyframes glow {
+    from {
+        text-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+    }
+
+    to {
+        text-shadow: 0 0 30px rgba(255, 0, 255, 0.8), 0 0 40px rgba(0, 255, 255, 0.6);
+    }
+}
+
+.controls {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 3;
+    display: flex;
+    gap: 20px;
+}
+
+.control-btn {
+    background: rgba(0, 255, 255, 0.1);
+    border: 2px solid rgba(0, 255, 255, 0.3);
+    color: #00ffff;
+    padding: 12px 24px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+    .control-btn:hover {
+        background: rgba(0, 255, 255, 0.2);
+        border-color: rgba(0, 255, 255, 0.6);
+        box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+        transform: translateY(-2px);
+    }
+
+    .control-btn.active {
+        background: rgba(0, 255, 255, 0.3);
+        border-color: rgba(0, 255, 255, 0.8);
+        box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+    }
+
+.info-panel {
+    position: absolute;
+    top: 30px;
+    left: 30px;
+    background: rgba(0, 0, 0, 0.7);
+    border: 1px solid rgba(0, 255, 255, 0.3);
+    border-radius: 10px;
+    padding: 20px;
+    color: #00ffff;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    backdrop-filter: blur(10px);
+    z-index: 3;
+}
+
+.loading {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #00ffff;
+    font-size: 1.2rem;
+    z-index: 4;
+}
+
+.spinner {
+    border: 3px solid rgba(0, 255, 255, 0.3);
+    border-top: 3px solid #00ffff;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 20px;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+@media (max-width: 768px) {
+    .text-overlay {
+        font-size: 10vw;
+    }
+
+    .info-panel {
+        font-size: 0.8em;
+        top: 10px;
+        left: 10px;
+    }
+
+    .controls {
+        flex-wrap: wrap;
+        justify-content: center;
+        bottom: 10px;
+    }
+
+    .control-btn {
+        padding: 8px 12px;
+        font-size: 0.9em;
+    }
+
+    .floating-image {
+        width: 80px; /* Меньший размер на мобильных */
+    }
+}
+.floating-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100px; /* Начальный размер изображения */
+    height: auto;
+    z-index: 5;
+    opacity: 0.8;
+    filter: drop-shadow(0 0 10px rgba(0, 255, 255, 0.5));
+    transition: transform 0.1s ease-out;
+    cursor: grab;
+}
+    .floating-image.dragging {
+        cursor: grabbing; /* Изменение курсора при перетаскивании */
+        z-index: 6; /* Поднять над другими троллями при перетаскивании */
+        opacity: 1.0; /* Сделать более непрозрачным при перетаскивании */
+        filter: drop-shadow(0 0 15px rgba(0, 255, 255, 0.8)); /* Более яркое свечение */
+    }
+
